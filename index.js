@@ -1,158 +1,131 @@
-﻿
-/**********************************************************
- * @INFO  [TABLE OF CONTENTS]
- * 1  Import_Modules
-   * 1.1 Validating script for advertisement
- * 2  CREATE_THE_DISCORD_BOT_CLIENT
- * 3  Load_Discord_Buttons_and_Discord_Menus
- * 4  Create_the_client.memer
- * 5  create_the_languages_objects
- * 6  Raise_the_Max_Listeners
- * 7  Define_the_Client_Advertisments
- * 8  LOAD_the_BOT_Functions
- * 9  Login_to_the_Bot
- * 
- *   BOT CODED BY: TOMato6966 | https://milrato.eu
- *********************************************************/
+const fs = require('fs');
+const path = require('path');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
+require('dotenv').config();
 
-
-
-/**********************************************************
- * @param {1} Import_Modules for this FIle
- *********************************************************/
-const Discord = require("discord.js");
-const colors = require("colors");
-const enmap = require("enmap");
-const fs = require("fs");
-const OS = require('os');
-const Events = require("events");
-const emojis = require("./botconfig/emojis.json")
-const config = require("./botconfig/config.json")
-const advertisement = require("./botconfig/advertisement.json")
-const { delay } = require("./handlers/functions")
-require('dotenv').config()
-
-
-/**********************************************************
- * @param {2} CREATE_THE_DISCORD_BOT_CLIENT with some default settings
- *********************************************************/
-const client = new Discord.Client({
-  fetchAllMembers: false,
-  restTimeOffset: 0,
-  failIfNotExists: false,
-  shards: "auto",
-  allowedMentions: {
-    parse: ["roles", "users"],
-    repliedUser: false,
-  },
-  partials: ['MESSAGE', 'CHANNEL', 'REACTION', 'GUILD_MEMBER', 'USER'],
-  intents: [Discord.Intents.FLAGS.GUILDS,
-  Discord.Intents.FLAGS.GUILD_MEMBERS,
-  Discord.Intents.FLAGS.GUILD_BANS,
-  Discord.Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS,
-  Discord.Intents.FLAGS.GUILD_INTEGRATIONS,
-  Discord.Intents.FLAGS.GUILD_WEBHOOKS,
-  Discord.Intents.FLAGS.GUILD_INVITES,
-  Discord.Intents.FLAGS.GUILD_VOICE_STATES,
-  Discord.Intents.FLAGS.GUILD_PRESENCES,
-  Discord.Intents.FLAGS.GUILD_MESSAGES,
-  Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-  //Discord.Intents.FLAGS.GUILD_MESSAGE_TYPING,
-  Discord.Intents.FLAGS.DIRECT_MESSAGES,
-  Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-    //Discord.Intents.FLAGS.DIRECT_MESSAGE_TYPING
+// Crear una nueva instancia del cliente de Discord
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences,
   ],
-  presence: {
-    activities: [{ name: `${config.status.text}`.replace("{prefix}", config.prefix), type: config.status.type, url: config.status.url }],
-    status: "online"
+});
+
+// Crear una colección para los comandos
+client.commands = new Collection();
+
+// Definir las carpetas 'Comandos' y 'Estado'
+const commandFolder = path.join(__dirname, 'Comandos');
+const estadoFolder = path.join(__dirname, 'Estado');
+
+// Verificar si la carpeta 'Comandos' y 'Estado' existen
+if (!fs.existsSync(commandFolder)) {
+  console.error('La carpeta "Comandos" no existe. Asegúrate de que esté en la ruta correcta.');
+  process.exit(1);
+}
+if (!fs.existsSync(estadoFolder)) {
+  console.error('La carpeta "Estado" no existe. Asegúrate de que esté en la ruta correcta.');
+  process.exit(1);
+}
+
+// Función para cargar comandos desde una carpeta específica
+const loadCommandsFromFolder = (folderPath) => {
+  const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
+
+  for (const file of commandFiles) {
+    const command = require(path.join(folderPath, file));
+
+    // Verificar que el comando tenga la propiedad "data.name" y "execute"
+    if (!command.data || !command.data.name || !command.execute) {
+      console.error(`El archivo ${file} no tiene una propiedad "data.name" o "execute". Saltando...`);
+      continue;
+    }
+
+    // Añadir el comando a la colección
+    client.commands.set(command.data.name, command);
+    console.log(`Comando cargado: ${command.data.name}`);
+  }
+};
+
+// Cargar comandos desde las subcarpetas en 'Comandos'
+const commandFolders = fs.readdirSync(commandFolder, { withFileTypes: true })
+  .filter(dirent => dirent.isDirectory())
+  .map(dirent => dirent.name);
+
+for (const folder of commandFolders) {
+  const commandPath = path.join(commandFolder, folder);
+  loadCommandsFromFolder(commandPath);
+}
+
+// Cargar el comando de la carpeta 'Estado'
+loadCommandsFromFolder(estadoFolder);
+
+// Listener de evento para que el bot esté listo
+client.once('ready', () => {
+  console.log(`» | Bot iniciado con éxito como ${client.user.tag}`);
+
+  // Llamar a la función de estado aquí
+  const estadoCommand = require(path.join(estadoFolder, 'estado'));
+  estadoCommand.execute(client);
+});
+
+// Listener de mensajes para comandos con el prefijo 'c!'
+client.on('messageCreate', async (message) => {
+  const prefix = 'c!';
+
+  // Verificar que el mensaje comience con el prefijo y no sea de un bot
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  // Extraer el nombre del comando y los argumentos
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const commandName = args.shift().toLowerCase();
+
+  if (!commandName) {
+    return message.reply('Debes escribir un comando después del prefijo c!.');
+  }
+
+  // Buscar el comando
+  const command = client.commands.get(commandName);
+
+  // Si el comando no existe, responder con un mensaje
+  if (!command) {
+    return message.reply(`Comando no encontrado: \`${commandName}\`. Usa \`c!help\` para ver los comandos disponibles.`);
+  }
+
+  // Ejecutar el comando si existe
+  try {
+    await command.execute(message, args);
+    console.log(`Comando ${commandName} ejecutado correctamente.`);
+  } catch (error) {
+    console.error(`Error ejecutando el comando ${commandName}:`, error);
+    message.reply('Hubo un error al ejecutar ese comando.');
   }
 });
 
+// Listener de interacción para comandos de tipo slash
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isCommand()) return;
 
+  const command = client.commands.get(interaction.commandName);
 
-/**********************************************************
- * @param {4} Create_the_client.memer property from Tomato's Api 
- *********************************************************/
-const Meme = require("memer-api");
-client.memer = new Meme(process.env.memer_api || config.memer_api); // GET a TOKEN HERE: https://discord.gg/Mc2FudJkgP
+  if (!command) return;
 
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
+    await interaction.reply({ content: 'Hubo un error al ejecutar ese comando.', ephemeral: true });
+  }
+});
 
-
-
-
-/**********************************************************
- * @param {5} create_the_languages_objects to select via CODE
- *********************************************************/
-client.la = {}
-var langs = fs.readdirSync("./languages")
-for (const lang of langs.filter(file => file.endsWith(".json"))) {
-  client.la[`${lang.split(".json").join("")}`] = require(`./languages/${lang}`)
-}
-Object.freeze(client.la)
-//function "handlemsg(txt, options? = {})" is in /handlers/functions 
-
-
-
-
-/**********************************************************
- * @param {6} Raise_the_Max_Listeners to 0 (default 10)
- *********************************************************/
-client.setMaxListeners(0);
-Events.defaultMaxListeners = 0;
-process.env.UV_THREADPOOL_SIZE = OS.cpus().length;
-
-
-/**********************************************************
- * @param {7} Define_the_Client_Advertisments from the Config File
- *********************************************************/
-client.ad = {
-  enabled: advertisement.adenabled,
-  statusad: advertisement.statusad,
-  spacedot: advertisement.spacedot,
-  textad: advertisement.textad
-}
-
-
-
-/**********************************************************
- * @param {8} LOAD_the_BOT_Functions 
- *********************************************************/
-//those are must haves, they load the dbs, events and commands and important other stuff
-function requirehandlers() {
-  ["extraevents", "clientvariables", "command", "loaddb", "events", "erelahandler", "slashCommands"].forEach(handler => {
-    try { require(`./handlers/${handler}`)(client); } catch (e) { console.log(e.stack ? String(e.stack).grey : String(e).grey) }
+// Loguear el bot en Discord
+client.login(process.env.TOKEN)
+  .then(() => {
+    console.log('» | Bot conectado correctamente.');
+  })
+  .catch(error => {
+    console.error('» | Error al iniciar sesión en Discord:', error);
   });
-  ["twitterfeed", /*"twitterfeed2",*/ "livelog", "youtube", "tiktok"].forEach(handler => {
-    try { require(`./social_log/${handler}`)(client); } catch (e) { console.log(e.stack ? String(e.stack).grey : String(e).grey) }
-  });
-  ["logger", "anti_nuke", "antidiscord", "antilinks", "anticaps", "antispam", "blacklist", "keyword", "antimention", "autobackup",
-
-    "apply", "ticket", "ticketevent",
-    "roster", "joinvc", "epicgamesverification", "boostlog",
-
-    "welcome", "leave", "ghost_ping_detector", "antiselfbot",
-
-    "jointocreate", "reactionrole", "ranking", "timedmessages",
-
-    "membercount", "autoembed", "suggest", "validcode", "dailyfact", "autonsfw",
-    "aichat", "mute", "automeme", "counter"].forEach(handler => {
-      try { require(`./handlers/${handler}`)(client); } catch (e) { console.log(e.stack ? String(e.stack).grey : String(e).grey) }
-    });
-} requirehandlers();
-
-
-/**********************************************************
- * @param {9} Login_to_the_Bot
- *********************************************************/
-client.login(process.env.token || config.token);
-
-
-/**********************************************************
- * @INFO
- * Bot Coded by Tomato#6966 | https://discord.gg/milrato
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention him / Milrato Development, when using this Code!
- * @INFO
- *********************************************************/
