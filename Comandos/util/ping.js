@@ -1,44 +1,46 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('ping')
-        .setDescription('Este comando permite a los usuarios verificar la latencia de conexión.'),
-
-    async execute(interaction) {
+    data: {
+        name: 'ping', // Nombre del comando
+        description: 'Este comando permite a los usuarios verificar la latencia de conexión.',
+    },
+    async execute(message) {
+         // Elimina el mensaje del comando
+    await message.delete();
         try {
-            const botPing = interaction.client.ws.ping; // Obtener el ping del bot
+            const botPing = message.client.ws.ping; // Obtener el ping del bot
 
             // Crear el embed con diseño mejorado
             const embed = new EmbedBuilder()
                 .setColor(0x00ff00) // Color verde
                 .setTitle('📶 Estado de Conexión')
-                .setDescription(`🏓 Pong! La latencia actual es de **${botPing} ms**.`)
-                .setThumbnail('https://example.com/tu-imagen.png') // Puedes agregar una imagen aquí si lo deseas
+                .setDescription(`La conexion actual es de **${botPing} ms**.`)
+                .setThumbnail('https://media.forgecdn.net/avatars/199/710/636908708078098459.png') // Puedes agregar una imagen aquí si lo deseas
                 .addFields(
                     { name: '💻 WebSocket Ping', value: `\`${botPing} ms\``, inline: true },
                     { name: 'Estado del Bot', value: botPing < 100 ? '🟢 Excelente' : '🟡 Aceptable', inline: true }
                 )
-                .setFooter({ text: 'Mapuche Bot - Latencia de conexión', iconURL: 'https://example.com/icono.png' }) // Cambia este icono si lo deseas
+                .setFooter({ text: 'OverMaster MC - Latencia de conexión', iconURL: 'https://media.forgecdn.net/avatars/199/710/636908708078098459.png' }) // Cambia este icono si lo deseas
                 .setTimestamp();
 
             // Responder al usuario con el embed
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            const sentMessage = await message.channel.send({ embeds: [embed] });
 
             // Eliminar el mensaje después de 5 segundos
             setTimeout(async () => {
                 try {
-                    await interaction.deleteReply();
+                    await sentMessage.delete();
                 } catch (error) {
-                    console.error('Error al eliminar la respuesta:', error);
+                    console.error('Error al eliminar el mensaje:', error);
                 }
-            }, 5000);
+            }, 15000); // Eliminar después de 
 
         } catch (error) {
             console.error('Error al ejecutar el comando ping:', error);
-
-            // Si ocurre un error, responder con un mensaje de error al usuario
-            await interaction.reply({ content: '❌ Hubo un error al ejecutar este comando. Inténtalo nuevamente más tarde.', ephemeral: true });
+            // Si ocurre un error, enviar un mensaje de error al usuario
+            await message.channel.send('❌ Hubo un error al ejecutar este comando. Inténtalo nuevamente más tarde.');
         }
     },
+    
 };

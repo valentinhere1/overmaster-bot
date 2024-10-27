@@ -1,14 +1,14 @@
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { EmbedBuilder } = require('discord.js');
 
 module.exports = {
-  data: {
-    name: 'help',
-    description: 'Muestra todos los comandos disponibles y sus descripciones',
-  },
-  async execute(message, args) {
-    const commandFolder = path.join(__dirname, '../'); // Ruta a la carpeta Comandos
+  data: new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Muestra todos los comandos disponibles y sus descripciones'),
+    
+  async execute(interaction) {
+    const commandFolder = path.join(__dirname, '../'); // Ruta a la carpeta de comandos
     const categories = {};
 
     // Leer las subcarpetas dentro de 'Comandos'
@@ -40,9 +40,9 @@ module.exports = {
       .setTitle('📜 Comandos Disponibles')
       .setDescription('Aquí están todos los comandos disponibles organizados por categoría:')
       .setColor('Random')
-      .setThumbnail('https://example.com/tu-imagen.png') // Puedes agregar una imagen de miniatura aquí
+      .setThumbnail('https://th.bing.com/th/id/OIP.ISvXmPADhupeMOh9KYnBCAAAAA?rs=1&pid=ImgDetMain')
       .setTimestamp()
-      .setFooter({ text: '¡Utiliza estos comandos para interactuar con el bot!', iconURL: 'https://example.com/icono.png' }); // Cambia el icono a uno adecuado
+      .setFooter({ text: '¡Utiliza estos comandos para interactuar con el bot!', iconURL: 'https://www.bing.com/images/search?view=detailV2&ccid=qraT6QWY&id=08153FAAEE7098C651BD443BF455DCA19639460C&thid=OIP.qraT6QWYRWX5Jwuqmk9N5QAAAA&mediaurl=https%3A%2F%2Fcmm.world%2Fwp-content%2Fuploads%2F2016%2F04%2Fhelp.jpg&exph=400&expw=400&q=help+pixel+art+background&simid=608018364656073854&form=IRPRST&ck=BAD7511732F5EED502F128FA3A970ED7&selectedindex=3&itb=0&ajaxhist=0&ajaxserp=0&cit=ccid_ISvXmPAD*cp_5E2B7A40E386DD1BE250B3CB92076811*mid_4A4CD76CBC8ABDA1D3A62FD19C1B0741430588AD*simid_608024111361979112*thid_OIP.ISvXmPADhupeMOh9KYnBCAAAAA&cdnurl=https%3A%2F%2Fth.bing.com%2Fth%2Fid%2FR.aab693e905984565f9270baa9a4f4de5%3Frik%3DDEY5lqHcVfQ7RA%26pid%3DImgRaw%26r%3D0&vt=2' });
 
     // Añadir campos por cada categoría de comandos
     for (const [category, commands] of Object.entries(categories)) {
@@ -50,12 +50,7 @@ module.exports = {
       helpEmbed.addFields({ name: `🔧 Categoría: ${category}`, value: commandList || 'No hay comandos en esta categoría.', inline: false });
     }
 
-    // Enviar el embed al canal
-    try {
-      await message.reply({ embeds: [helpEmbed] });
-    } catch (error) {
-      console.error('Error al enviar el mensaje de ayuda:', error);
-      await message.reply('Hubo un error al intentar mostrar los comandos.');
-    }
+    // Responder de manera efímera (solo visible para el usuario que ejecutó el comando)
+    await interaction.reply({ embeds: [helpEmbed], ephemeral: true });
   },
 };

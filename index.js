@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, EmbedBuilder } = require('discord.js'); // Asegúrate de importar EmbedBuilder
 require('dotenv').config();
 
 // Crear una nueva instancia del cliente de Discord
@@ -21,7 +21,7 @@ client.commands = new Collection();
 const commandFolder = path.join(__dirname, 'Comandos');
 const estadoFolder = path.join(__dirname, 'Estado');
 
-// Verificar si la carpeta 'Comandos' y 'Estado' existen
+// Verificar si las carpetas 'Comandos' y 'Estado' existen
 if (!fs.existsSync(commandFolder)) {
   console.error('La carpeta "Comandos" no existe. Asegúrate de que esté en la ruta correcta.');
   process.exit(1);
@@ -66,8 +66,8 @@ loadCommandsFromFolder(estadoFolder);
 // Listener de evento para que el bot esté listo
 client.once('ready', () => {
   console.log(`» | Bot iniciado con éxito como ${client.user.tag}`);
-
-  // Llamar a la función de estado aquí
+  
+  // Llamar a la función de estado aquí (si la tienes)
   const estadoCommand = require(path.join(estadoFolder, 'estado'));
   estadoCommand.execute(client);
 });
@@ -75,6 +75,7 @@ client.once('ready', () => {
 // Listener de mensajes para comandos con el prefijo 'c!'
 client.on('messageCreate', async (message) => {
   const prefix = 'c!';
+  
 
   // Verificar que el mensaje comience con el prefijo y no sea de un bot
   if (!message.content.startsWith(prefix) || message.author.bot) return;
@@ -92,7 +93,7 @@ client.on('messageCreate', async (message) => {
 
   // Si el comando no existe, responder con un mensaje
   if (!command) {
-    return message.reply(`Comando no encontrado: \`${commandName}\`. Usa \`c!help\` para ver los comandos disponibles.`);
+    return message.reply(`Comando: \`${commandName}\` no encontrado en la base de datos. Usa \`c!help\` para ver los comandos disponibles.`);
   }
 
   // Ejecutar el comando si existe

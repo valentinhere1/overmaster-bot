@@ -11,21 +11,32 @@ module.exports = {
     console.log("» | Bot conectado a la base de datos y listo");
 
     let statusArray = [
-      { name: "Mapuche Clan", type: ActivityType.Watching },
+      { name: "OverMaster MC", type: ActivityType.Watching },
       { name: "Minecraft server", type: ActivityType.Playing },
-      { name: "6b6t.org", type: ActivityType.Playing },
-      { name: "black.holy.gg", type: ActivityType.Playing },
       { name: "c!help", type: ActivityType.Watching },
-      { name: "MapuToki", type: ActivityType.Playing },
+      { name: "Maestro Fundador", type: ActivityType.Playing },
       { name: "reuniones todos los domingos", type: ActivityType.Watching },
+      { name: "alzar banderas en nombre del Clan", type: ActivityType.Playing },
+      { name: "el estado del servidor apagado", type: ActivityType.Watching },
+      { name: "coordinar estrategias para el próximo recluta", type: ActivityType.Playing },
+      { name: "la unión de los miembros", type: ActivityType.Listening }
     ];
 
+    let presenceArray = ["online", "idle", "dnd"]; // Array de presencias
+
     setInterval(() => {
-      const option = Math.floor(Math.random() * statusArray.length);
+      const statusOption = Math.floor(Math.random() * statusArray.length);
+      const presenceOption = Math.floor(Math.random() * presenceArray.length);
+      
       client.user.setPresence({
-        activities: [{ name: statusArray[option].name, type: statusArray[option].type }],
-        status: "dnd", // Establecer el estado como "No molestar"
+        activities: [{ 
+          name: statusArray[statusOption].name, 
+          type: statusArray[statusOption].type 
+        }],
+        status: presenceArray[presenceOption], // Cambia entre "online", "idle", "dnd"
       });
-    }, 5000); // Cambia el estado cada 5 segundos
+      
+      console.log(``);
+    }, 25000); // Cambia el estado y la actividad cada 55 segundos
   },
 };
